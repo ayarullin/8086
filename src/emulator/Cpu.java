@@ -238,18 +238,19 @@ public class Cpu {
         sb.append((flags & flagAF) == 0 ? ' ' : 'A');
         sb.append((flags & flagPF) == 0 ? ' ' : 'P');
         sb.append((flags & flagCF) == 0 ? ' ' : 'C');
+        sb.append(")");
         //sb.append(")  cycl="); sb.append(cycl);
         //sb.append("\n");
         sb.append(" CS:IP=");
         sb.append(wordToHex(sreg[regCS]));
         sb.append(":");
-        sb.append(wordToHex(ip));
+        sb.append(wordToHex(ip - 1));
         sb.append(" ");
-        /*for (int i = 0; i < 16; i++) {
-            sb.append((ip + i == nextip) ? '|' : ' ');
-            sb.append(Misc.byteToHex(
-              mem.loadByte((sreg[sregCS] << 4) + ip + i)));
-        }*/
+        for (int i = 0; i < 16; i++) {
+            //sb.append((ip + i == nextip) ? '|' : ' ');
+            sb.append(byteToHex(
+              mem.getByte((sreg[regCS] << 4) + ip + i - 1)));
+        }
         //sb.append("\n");
         return sb.toString();
     }
