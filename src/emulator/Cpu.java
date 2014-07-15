@@ -56,12 +56,68 @@ public class Cpu {
 			memIdx = (byte)(modRM & 0x07);
 			
 			switch (mode) {
+				case 1:
+					addr = getMode1Address();
+					break;
+				case 2: 
+					addr = getMode2Address();
+					break;
 				case 3:
 					addr = null; // using memIdx as regIdx in mode 3
 					break;
 				default:
 					throw new Exception("Unsupported mode: " + mode);
 			}
+		}
+		
+		private int getMode1Address() {
+			switch (memIdx) {
+				case 0:
+					return getAddr(regDS, (short) (reg[regBX] + reg[regSI] + nextByte()));
+				case 1:
+					return getAddr(regDS, (short) (reg[regBX] + reg[regDI] + nextByte()));
+				case 2:
+					return getAddr(regSS, (short) (reg[regBP] + reg[regSI] + nextByte()));
+				case 3:
+					return getAddr(regSS, (short) (reg[regBP] + reg[regDI] + nextByte()));
+				case 4:
+					return getAddr(regDS, (short) (reg[regSI] + nextByte()));
+				case 5:
+					return getAddr(regDS, (short) (reg[regDI] + nextByte()));
+				case 6:
+					return getAddr(regSS, (short) (reg[regBP] + nextByte()));
+				case 7:
+					return getAddr(regDS, (short) (reg[regBX] + nextByte()));
+				default:
+					throw new RuntimeException("Unknown memIdx: " + memIdx);
+			}
+		}
+		
+		private int getMode2Address() {
+			switch (memIdx) {
+				case 0:
+					return getAddr(regDS, (short) (reg[regBX] + reg[regSI] + nextWord()));
+				case 1:
+					return getAddr(regDS, (short) (reg[regBX] + reg[regDI] + nextWord()));
+				case 2:
+					return getAddr(regSS, (short) (reg[regBP] + reg[regSI] + nextWord()));
+				case 3:
+					return getAddr(regSS, (short) (reg[regBP] + reg[regDI] + nextWord()));
+				case 4:
+					return getAddr(regDS, (short) (reg[regSI] + nextWord()));
+				case 5:
+					return getAddr(regDS, (short) (reg[regDI] + nextWord()));
+				case 6:
+					return getAddr(regSS, (short) (reg[regBP] + nextWord()));
+				case 7:
+					return getAddr(regDS, (short) (reg[regBX] + nextWord()));
+				default:
+					throw new RuntimeException("Unknown memIdx: " + memIdx);
+			}
+		}
+		
+		private int getAddr(int segIndex, int offs) {
+			return (sreg[segIndex] << 4) + offs;
 		}
 		
 		public byte getMem8() {
@@ -128,6 +184,10 @@ public class Cpu {
 		public void setSreg(short value) {
 			sreg[regIdx] = value & 0xffff;
 		}
+		
+		public int getSreg() {
+			return sreg[regIdx];
+		}
 	}
 	
 	public Cpu(Memory mem) {
@@ -142,10 +202,62 @@ public class Cpu {
 		modRM = new ModRM();
 	}
 	
+	private String byteToHex(int v)
+	{
+		return Integer.toHexString((v & 0xff) | 0x100).substring(1);
+	}
+
+	private String wordToHex(int v)
+	{
+		return Integer.toHexString((v & 0xffff) | 0x10000).substring(1);
+	}
+	
+	private String getStateString()
+    {
+        StringBuffer sb = new StringBuffer();
+        sb.append(" AX=");  sb.append(wordToHex(reg[regAX]));
+        sb.append("  BX="); sb.append(wordToHex(reg[regBX]));
+        sb.append("  CX="); sb.append(wordToHex(reg[regCX]));
+        sb.append("  DX="); sb.append(wordToHex(reg[regDX]));
+        sb.append("  SI="); sb.append(wordToHex(reg[regSI]));
+        sb.append("  DI="); sb.append(wordToHex(reg[regDI]));
+        sb.append("  BP="); sb.append(wordToHex(reg[regBP]));
+        sb.append("  SP="); sb.append(wordToHex(reg[regSP]));
+        //sb.append("\n");
+        sb.append(" DS="); sb.append(wordToHex(sreg[regDS]));
+        sb.append("  ES="); sb.append(wordToHex(sreg[regES]));
+        sb.append("  SS="); sb.append(wordToHex(sreg[regSS]));
+        sb.append("  flags="); sb.append(wordToHex(flags));
+        sb.append(" (");
+        sb.append((flags & flagOF) == 0 ? ' ' : 'O');
+        sb.append((flags & flagDF) == 0 ? ' ' : 'D');
+        sb.append((flags & flagIF) == 0 ? ' ' : 'I');
+        sb.append((flags & flagTF) == 0 ? ' ' : 'T');
+        sb.append((flags & flagSF) == 0 ? ' ' : 'S');
+        sb.append((flags & flagZF) == 0 ? ' ' : 'Z');
+        sb.append((flags & flagAF) == 0 ? ' ' : 'A');
+        sb.append((flags & flagPF) == 0 ? ' ' : 'P');
+        sb.append((flags & flagCF) == 0 ? ' ' : 'C');
+        //sb.append(")  cycl="); sb.append(cycl);
+        //sb.append("\n");
+        sb.append(" CS:IP=");
+        sb.append(wordToHex(sreg[regCS]));
+        sb.append(":");
+        sb.append(wordToHex(ip));
+        sb.append(" ");
+        /*for (int i = 0; i < 16; i++) {
+            sb.append((ip + i == nextip) ? '|' : ' ');
+            sb.append(Misc.byteToHex(
+              mem.loadByte((sreg[sregCS] << 4) + ip + i)));
+        }*/
+        //sb.append("\n");
+        return sb.toString();
+    }
+	
 	public void step() throws Exception {
 		byte opcode = nextByte();
 		
-		System.out.println(String.format("%s: %X", ++opcodeNum, opcode));
+		System.out.println(String.format("%s: %X ", ++opcodeNum, opcode) + getStateString());
 		
 		switch (opcode) {
 			case (byte) 0x1E: // PUSH DS
@@ -168,6 +280,10 @@ public class Cpu {
 			case (byte) 0x56: // PUSH SI
 			case (byte) 0x57: // PUSH DI
 				push(reg[opcode & 0x07]);
+				break;
+			case (byte) 0x8C: // MOV Ew Sw
+				modRM.read();
+				modRM.setMem16((short)modRM.getSreg());
 				break;
 			case (byte) 0x8E: // MOV Sw Ew
 				modRM.read();
