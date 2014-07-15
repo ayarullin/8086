@@ -188,6 +188,10 @@ public class Cpu {
 		public int getSreg() {
 			return sreg[regIdx];
 		}
+		
+		public byte getRegIdx() {
+			return regIdx;
+		}
 	}
 	
 	public Cpu(Memory mem) {
@@ -259,6 +263,9 @@ public class Cpu {
 		byte opcode = nextByte();
 		
 		System.out.println(String.format("%s: %X ", ++opcodeNum, opcode) + getStateString());
+		if (opcodeNum > 100) {
+			System.exit(0);
+		}
 		
 		switch (opcode) {
 			case (byte) 0x1E: // PUSH DS
@@ -281,6 +288,30 @@ public class Cpu {
 			case (byte) 0x56: // PUSH SI
 			case (byte) 0x57: // PUSH DI
 				push(reg[opcode & 0x07]);
+				break;
+			case (byte) 0x72: //JB Jb
+				if (getFlag(flagCF)) {
+					ip = ip + nextByte() + 1;
+				}
+				break;
+			case (byte) 0x81: //GRP1 Ev Iv
+				modRM.read();
+				switch (modRM.getRegIdx()) {
+					case 0: // ADD
+						modRM.setMem16(add16(modRM.getMem16(), nextWord()));
+						break;
+//					case 1:
+//					case 2:
+//					case 3:
+//					case 4:
+//					case 5:
+//					case 6:
+					case 7: //CMP
+						sub16(modRM.getMem16(), nextWord());
+						break;
+					default:
+						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
+				}
 				break;
 			case (byte) 0x8C: // MOV Ew Sw
 				modRM.read();
@@ -337,6 +368,22 @@ public class Cpu {
 		}
 	}
 	
+	private short add16(int v1, int v2) {
+		updateFlags16((v1 & 0xffff) + (v2 & 0xffff));
+		int intRes = (short) v1 + (short) v2;
+		setFlag(flagOF, intRes > 0x7fff || intRes < -0x8000);
+		setFlag(flagAF, (v1 & 0xf) + (v2 & 0xf) > 0xf);
+		return (short) intRes;
+	}
+	
+	protected short sub16(int v1, int v2) {
+		updateFlags16((v1 & 0xffff) - (v2 & 0xffff));
+		int intRes = (short) v1 - (short) v2;
+		setFlag(flagOF, intRes > 0x7fff || intRes < -0x8000);
+		setFlag(flagAF, (v1 & 0xf) < (v2 & 0xf));
+		return (short) intRes;
+	}
+	
 	private byte xor8(byte v1, byte v2) {
 		short shortResult = (short) (((short) v1 & 0xff) ^ ((short) v2 & 0xff));
 		byte result = (byte) shortResult;
@@ -356,7 +403,7 @@ public class Cpu {
 		setFlag(flagOF, false);
 		setFlag(flagCF, false);
 		setFlag(flagAF, false); // ??
-		updateFlags16();
+		updateFlags16(intRes);
 		
 		return result;
 	}
@@ -379,8 +426,9 @@ public class Cpu {
 		ip = newIP & 0xffff;
 	}
 	
-	public void updateFlags16() {
-		// TODO: implementation
+	public void updateFlags16(int v) {
+		setFlag(flagCF, (v & 0xFFFF0000) != 0);
+		// TODO: other flags
 	}
 	
 	public void updateFlags8() {
@@ -393,6 +441,10 @@ public class Cpu {
 		} else {
 			flags &= ~mask;
 		}
+	}
+	
+	private boolean getFlag(int mask) {
+		return (flags & mask) == mask;
 	}
 	
 	private byte nextByte() {
