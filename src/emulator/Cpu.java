@@ -451,7 +451,18 @@ public class Cpu {
 	
 	public void updateFlags16(int v) {
 		setFlag(flagCF, (v & 0xFFFF0000) != 0);
-		// TODO: other flags
+		setFlag(flagZF, (short) v == 0);
+		
+		byte byteVal = (byte) v;
+		byte bitSum = 0;
+		for (byte b = 1; b != 0; b <<= 1) {
+			if ((byteVal & b) != 0) {
+				bitSum += 1;
+			}
+		}
+		setFlag(flagPF, bitSum % 2 == 0);
+		
+		setFlag(flagSF, ((short) v & 0x8000) != 0);
 	}
 	
 	public void updateFlags8() {
