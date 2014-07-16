@@ -8,7 +8,7 @@ public class Emulator {
 	private Memory mem;
 	private Cpu cpu;
 	
-	private void init() {
+	private void init() throws SecurityException, IOException {
 		mem = new Memory(0x100000);
 		
 		try {

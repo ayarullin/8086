@@ -1,5 +1,11 @@
 package emulator;
 
+import java.io.IOException;
+import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 public class Cpu {
 
 	private static final int regAX = 0;
@@ -27,8 +33,9 @@ public class Cpu {
 	private static final int flagDF = 0x0400;
     private static final int flagOF = 0x0800;
 	
-	static final int INIT_CS = 0xf000;
-    static final int INIT_IP = 0xfff0;
+	private static final int INIT_CS = 0xf000;
+    private static final int INIT_IP = 0xfff0;
+    private static final int INIT_FLAGS = 0xf002;
 	
 	private int[] reg;
 	private int[] sreg;
@@ -42,6 +49,8 @@ public class Cpu {
 	private Memory mem;
 	
 	private ModRM modRM;
+	
+	private final static Logger logger = Logger.getAnonymousLogger();
 	
 	class ModRM {
 		private byte regIdx;
@@ -194,16 +203,30 @@ public class Cpu {
 		}
 	}
 	
-	public Cpu(Memory mem) {
+	class LogFormatter extends Formatter {
+
+		@Override
+		public String format(LogRecord record) {
+			return record.getMessage() + "\n";
+		}
+	}
+	
+	public Cpu(Memory mem) throws SecurityException, IOException {
 		reg = new int[8];
 		sreg = new int[4];
 		
 		sreg[regCS] = INIT_CS;
 		ip = INIT_IP;
 		
+		flags = INIT_FLAGS;
+		
 		this.mem = mem;
 		
 		modRM = new ModRM();
+		
+		Handler logHandler = new FileHandler("cpu.log");
+		logHandler.setFormatter(new LogFormatter());
+		logger.addHandler(logHandler);
 	}
 	
 	private String byteToHex(int v)
@@ -262,8 +285,8 @@ public class Cpu {
 	public void step() throws Exception {
 		byte opcode = nextByte();
 		
-		System.out.println(String.format("%s: %X ", ++opcodeNum, opcode) + getStateString());
-		if (opcodeNum > 100) {
+		logger.info(String.format("%s: 0x%X ", ++opcodeNum, opcode) + getStateString());
+		if (opcodeNum > 100000) {
 			System.exit(0);
 		}
 		
