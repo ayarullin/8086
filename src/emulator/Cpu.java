@@ -438,6 +438,12 @@ public class Cpu {
 			case (byte) 0xFA: // CLI
 				setFlag(flagIF, false);
 				break;
+			case (byte) 0xFC: // CLD
+				setFlag(flagDF, false);
+				break;
+			case (byte) 0xFD: // STD
+				setFlag(flagDF, true);
+				break;
 			default:
 				//System.out.print(sreg[regSS] + " " + reg[regSP]);
 				throw new InvalidOpcodeException(opcode);
