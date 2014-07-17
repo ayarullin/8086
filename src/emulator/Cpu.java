@@ -65,6 +65,9 @@ public class Cpu {
 			memIdx = (byte)(modRM & 0x07);
 			
 			switch (mode) {
+				case 0:
+					addr = getMode0Address();
+					break;
 				case 1:
 					addr = getMode1Address();
 					break;
@@ -76,6 +79,29 @@ public class Cpu {
 					break;
 				default:
 					throw new Exception("Unsupported mode: " + mode);
+			}
+		}
+		
+		private int getMode0Address() {
+			switch (memIdx) {
+				case 0:
+					return getAddr(regDS, (short) (reg[regBX] + reg[regSI]));
+				case 1:
+					return getAddr(regDS, (short) (reg[regBX] + reg[regDI]));
+				case 2:
+					return getAddr(regSS, (short) (reg[regBP] + reg[regSI]));
+				case 3:
+					return getAddr(regSS, (short) (reg[regBP] + reg[regDI]));
+				case 4:
+					return getAddr(regDS, (short) (reg[regSI]));
+				case 5:
+					return getAddr(regDS, (short) (reg[regDI]));
+				case 6:
+					return getAddr(regSS, nextWord());
+				case 7:
+					return getAddr(regDS, (short) (reg[regBX]));
+				default:
+					throw new RuntimeException("Unknown memIdx: " + memIdx);
 			}
 		}
 		
