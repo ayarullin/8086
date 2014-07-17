@@ -320,6 +320,12 @@ public class Cpu {
 		}
 		
 		switch (opcode) {
+			case (byte) 0x06: // PUSH ES
+				push(sreg[regES]);
+				break;
+			case (byte) 0x07: // POP ES
+				sreg[regES] = pop();
+				break;
 			case (byte) 0x1E: // PUSH DS
 				push(sreg[regDS]);
 				break;
