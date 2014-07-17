@@ -251,6 +251,7 @@ public class Cpu {
 		
 		modRM = new ModRM();
 		
+		logger.setUseParentHandlers(false);
 		Handler logHandler = new FileHandler("cpu.log");
 		logHandler.setFormatter(new LogFormatter());
 		logger.addHandler(logHandler);
@@ -320,10 +321,10 @@ public class Cpu {
 		
 		switch (opcode) {
 			case (byte) 0x1E: // PUSH DS
-				push(reg[regDS]);
+				push(sreg[regDS]);
 				break;
 			case (byte) 0x1F: // POP DS
-				reg[regDS] = pop();
+				sreg[regDS] = pop();
 				break;
 			case (byte) 0x30: // XOR Eb Gb
 				modRM.read();
@@ -410,6 +411,9 @@ public class Cpu {
 			case (byte) 0xBE: // MOV SI Iv
 			case (byte) 0xBF: // MOV DI Iv
 				reg[opcode & 0x07] = nextWord();
+				break;
+			case (byte) 0xC3: // RET
+				ip = pop() & 0xffff;
 				break;
 			case (byte) 0xC7: // MOV Ev Iv
 				modRM.read();
