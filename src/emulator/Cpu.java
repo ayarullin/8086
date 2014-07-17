@@ -6,6 +6,7 @@ import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+
 public class Cpu {
 
 	private static final int regAX = 0;
@@ -339,6 +340,16 @@ public class Cpu {
 			case (byte) 0x57: // PUSH DI
 				push(reg[opcode & 0x07]);
 				break;
+			case (byte) 0x58: // POP AX
+			case (byte) 0x59: // POP CD
+			case (byte) 0x5A: // POP DX
+			case (byte) 0x5B: // POP BX
+			case (byte) 0x5C: // POP SP
+			case (byte) 0x5D: // POP BP
+			case (byte) 0x5E: // POP SI
+			case (byte) 0x5F: // POP DI
+				reg[opcode & 0x07] = pop();
+				break;
 			case (byte) 0x72: //JB Jb
 				if (getFlag(flagCF)) {
 					ip = ip + nextByte() + 1;
@@ -464,6 +475,12 @@ public class Cpu {
 		int sp = (reg[regSP] - 2) & 0xffff;
         reg[regSP] = sp;
         mem.setWord((sreg[regSS] << 4) + sp, (short) value);
+	}
+	
+	private short pop() {
+		short v = mem.getWord((sreg[regSS] << 4) + reg[regSP]);
+		reg[regSP] = (short) (reg[regSP] + 2);
+		return v;
 	}
 	
 	private void outb(byte port, byte val) {
