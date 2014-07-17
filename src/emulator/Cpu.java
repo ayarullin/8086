@@ -322,6 +322,9 @@ public class Cpu {
 			case (byte) 0x1E: // PUSH DS
 				push(reg[regDS]);
 				break;
+			case (byte) 0x1F: // POP DS
+				reg[regDS] = pop();
+				break;
 			case (byte) 0x30: // XOR Eb Gb
 				modRM.read();
 				modRM.setMem8(xor8(modRM.getMem8(), modRM.getReg8()));
