@@ -275,6 +275,7 @@ public class Cpu {
         sb.append(" ");
         for (int i = 0; i < 16; i++) {
             //sb.append((ip + i == nextip) ? '|' : ' ');
+        	sb.append(' ');
             sb.append(byteToHex(
               mem.getByte((sreg[regCS] << 4) + ip + i - 1)));
         }
@@ -315,6 +316,8 @@ public class Cpu {
 			case (byte) 0x72: //JB Jb
 				if (getFlag(flagCF)) {
 					ip = ip + nextByte() + 1;
+				} else {
+					nextByte();
 				}
 				break;
 			case (byte) 0x81: //GRP1 Ev Iv
