@@ -430,6 +430,10 @@ public class Cpu {
 			case (byte) 0xC3: // RET
 				ip = pop() & 0xffff;
 				break;
+			case (byte) 0xC6: // MOV Eb Ib
+				modRM.read();
+				modRM.setMem8(nextByte());
+				break;
 			case (byte) 0xC7: // MOV Ev Iv
 				modRM.read();
 				modRM.setMem16(nextWord());
@@ -449,6 +453,9 @@ public class Cpu {
 				break;
 			case (byte) 0xFA: // CLI
 				setFlag(flagIF, false);
+				break;
+			case (byte) 0xFB: // STI
+				setFlag(flagIF, true);
 				break;
 			case (byte) 0xFC: // CLD
 				setFlag(flagDF, false);
