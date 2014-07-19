@@ -44,6 +44,7 @@ public class Cpu {
 	private int flags;
 	
 	private int ip;
+	private int jump = -1;
 	
 	private int opcodeNum = 0;
 	
@@ -394,6 +395,14 @@ public class Cpu {
 				modRM.read();
 				modRM.setSreg(modRM.getMem16());
 				break;
+			case (byte) 0xAA: // STOSB
+			case (byte) 0xAB: // STOSW
+			case (byte) 0xAC: // LODSB
+			case (byte) 0xAD: // LODSW
+			case (byte) 0xAE: // SCASB
+			case (byte) 0xAF: // SCASW
+				processString(opcode);
+				break;
 			case (byte) 0xB0: // MOV AL Ib
 			case (byte) 0xB1: // MOV CL Ib
 			case (byte) 0xB2: // MOV DL Ib
@@ -435,6 +444,9 @@ public class Cpu {
 			case (byte) 0xEA: // JMP Ap (far)
 				opJmpAp();
 				break;
+			case (byte) 0xF3: // REPZ
+				jump = ip - 1;
+				break;
 			case (byte) 0xFA: // CLI
 				setFlag(flagIF, false);
 				break;
@@ -447,6 +459,27 @@ public class Cpu {
 			default:
 				//System.out.print(sreg[regSS] + " " + reg[regSP]);
 				throw new InvalidOpcodeException(opcode);
+		}
+	}
+	
+	private void processString(byte opcode) throws InvalidOpcodeException {
+		
+		int diff = (getFlag(flagDF) ? -1 : 1) << (opcode & 1);
+		
+		switch (opcode) {
+			case (byte) 0xAB: // STOSW
+				mem.setWord((sreg[regES] << 4) + reg[regDI], (short) reg[regAX]);
+				reg[regDI] = reg[regDI] + diff;
+				break;
+			default:
+				throw new InvalidOpcodeException(opcode);
+		}
+		
+		if (jump > 0) {
+			reg[regCX] -= 1;
+			if (reg[regCX] > 0) {
+				ip = jump;
+			}
 		}
 	}
 	
