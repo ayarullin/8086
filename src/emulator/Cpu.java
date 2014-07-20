@@ -368,7 +368,17 @@ public class Cpu {
 					nextByte();
 				}
 				break;
-			case (byte) 0x81: //GRP1 Ev Iv
+			case (byte) 0x80: // GRP1 Eb Ib
+				modRM.read();
+				switch (modRM.getRegIdx()) {
+					case 7: // CMP
+						sub8(modRM.getMem8(), nextByte());
+						break;
+					default:
+						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
+				}
+				break;
+			case (byte) 0x81: // GRP1 Ev Iv
 				modRM.read();
 				switch (modRM.getRegIdx()) {
 					case 0: // ADD
@@ -519,7 +529,15 @@ public class Cpu {
 		return (short) intRes;
 	}
 	
-	protected short sub16(int v1, int v2) {
+	private short sub8(byte v1, byte v2) {
+		updateFlags8((short) ((v1 & 0xff) - (v2 & 0xff)));
+		short shortResult = (short) (v1 - v2);
+		setFlag(flagOF, shortResult > 0x7f || shortResult < -0x80);
+		setFlag(flagAF, (v1 & 0xf) < (v2 & 0xf));
+		return (byte) shortResult;
+	}
+	
+	private short sub16(int v1, int v2) {
 		updateFlags16((v1 & 0xffff) - (v2 & 0xffff));
 		int intRes = (short) v1 - (short) v2;
 		setFlag(flagOF, intRes > 0x7fff || intRes < -0x8000);
@@ -534,7 +552,7 @@ public class Cpu {
 		setFlag(flagOF, false);
 		setFlag(flagCF, false);
 		setFlag(flagAF, false); // ??
-		updateFlags8();
+		updateFlags8(shortResult);
 		
 		return result;
 	}
@@ -600,8 +618,19 @@ public class Cpu {
 		setFlag(flagSF, ((short) v & 0x8000) != 0);
 	}
 	
-	public void updateFlags8() {
-		// TODO: implementation
+	public void updateFlags8(short v) {
+		setFlag(flagCF, (v & 0xFF00) != 0);
+		setFlag(flagZF, v == 0);
+		
+		byte bitSum = 0;
+		for (byte b = 1; b != 0; b <<= 1) {
+			if ((v & b) != 0) {
+				bitSum += 1;
+			}
+		}
+		setFlag(flagPF, bitSum % 2 == 0);
+
+		setFlag(flagSF, (v & 0x80) != 0);
 	}
 	
 	private void setFlag(int mask, boolean value) {
