@@ -361,8 +361,15 @@ public class Cpu {
 			case (byte) 0x5F: // POP DI
 				reg[opcode & 0x07] = pop();
 				break;
-			case (byte) 0x72: //JB Jb
+			case (byte) 0x72: // JB Jb
 				if (getFlag(flagCF)) {
+					ip = ip + nextByte() + 1;
+				} else {
+					nextByte();
+				}
+				break;
+			case (byte) 0x77: // JA Jb
+				if (!getFlag(flagCF) && !getFlag(flagZF)) {
 					ip = ip + nextByte() + 1;
 				} else {
 					nextByte();
