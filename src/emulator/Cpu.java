@@ -470,6 +470,16 @@ public class Cpu {
 			case (byte) 0xFD: // STD
 				setFlag(flagDF, true);
 				break;
+			case (byte) 0xFF: // GRP5 Ev
+				modRM.read();
+				switch (modRM.getRegIdx()) {
+					case 6:
+						push(modRM.getMem16());
+						break;
+					default:
+						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
+				}
+				break;
 			default:
 				//System.out.print(sreg[regSS] + " " + reg[regSP]);
 				throw new InvalidOpcodeException(opcode);
