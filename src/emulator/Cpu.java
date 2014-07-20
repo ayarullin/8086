@@ -476,6 +476,16 @@ public class Cpu {
 			case (byte) 0xEA: // JMP Ap (far)
 				opJmpAp();
 				break;
+			case (byte) 0xD1: // GRP2 Ev 1
+				modRM.read();
+				switch (modRM.getRegIdx()) {
+					case 4:
+						modRM.setMem16(shl16(modRM.getMem16(), 1));
+						break;
+					default:
+						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
+				}
+				break;
 			case (byte) 0xF3: // REPZ
 				jump = ip - 1;
 				break;
@@ -574,6 +584,17 @@ public class Cpu {
 		updateFlags16(intRes);
 		
 		return result;
+	}
+	
+	private short shl16(int v, int count) {
+		v <<= count;
+		
+		updateFlags16(v);
+		setFlag(flagCF, (v & 0x10000) == 0x10000);
+		setFlag(flagAF, (v & 0x10) != 0);
+		setFlag(flagOF, ((v >> 16) & 0x1) != ((v >> 15) & 0x1));
+		
+		return (short) v;
 	}
 	
 	private void push(int value) {
