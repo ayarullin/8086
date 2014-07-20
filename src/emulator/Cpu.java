@@ -387,6 +387,10 @@ public class Cpu {
 						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
 				}
 				break;
+			case (byte) 0x89: // MOV Ev Gv
+				modRM.read();
+				modRM.setMem16((short) modRM.getReg16());
+				break;
 			case (byte) 0x8C: // MOV Ew Sw
 				modRM.read();
 				modRM.setMem16((short)modRM.getSreg());
