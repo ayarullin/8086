@@ -438,6 +438,9 @@ public class Cpu {
 				modRM.read();
 				modRM.setMem16(nextWord());
 				break;
+			case (byte) 0xCD: // INT Ib
+				interrupt(nextByte());
+				break;
 			case (byte) 0xE6: // OUT Ib AL
 				outb(nextByte(), (byte) (reg[regAX] & 0xff));
 				break;
@@ -545,6 +548,15 @@ public class Cpu {
 	private void outb(byte port, byte val) {
 		// TODO: DMA implementation
 		System.out.println(String.format("out 0x%X, 0x%X", port, val));
+	}
+	
+	private void interrupt(byte intNo) {
+		push(flags);
+		push(sreg[regCS]);
+		push(ip);
+		ip = mem.getWord(4 * intNo) & 0xffff;
+		sreg[regCS] = mem.getWord(4 * intNo + 2) & 0xffff;
+		System.out.println(String.format("int: 0x%X", intNo));
 	}
 	
 	private void opJmpAp() {
