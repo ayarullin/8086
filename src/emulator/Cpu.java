@@ -160,7 +160,7 @@ public class Cpu {
 				segIndex = forcedSegIdx;
 				forcedSegIdx = null;
 			}
-			return (sreg[segIndex] << 4) + offs;
+			return (sreg[segIndex] << 4) + (offs & 0xffff);
 		}
 		
 		public byte getMem8() {
@@ -517,6 +517,10 @@ public class Cpu {
 			case (byte) 0xFF: // GRP5 Ev
 				modRM.read();
 				switch (modRM.getRegIdx()) {
+					case 4:
+						System.out.print(modRM.getMem16());
+						ip = modRM.getMem16() & 0xFFFF;
+						break;
 					case 6:
 						push(modRM.getMem16()); // PUSH
 						break;
