@@ -407,7 +407,9 @@ public class Cpu {
 //					case 1:
 //					case 2:
 //					case 3:
-//					case 4:
+					case 4: // AND
+						modRM.setMem16(and16(modRM.getMem16(), nextWord()));
+						break;
 //					case 5:
 //					case 6:
 					case 7: //CMP
@@ -576,6 +578,14 @@ public class Cpu {
 		setFlag(flagOF, intRes > 0x7fff || intRes < -0x8000);
 		setFlag(flagAF, (v1 & 0xf) < (v2 & 0xf));
 		return (short) intRes;
+	}
+	
+	private short and16(int v1, int v2) {
+		int intRes = (v1 & 0xffff) & (v2 & 0xffff);
+		short shortRes = (short) intRes;
+		updateFlags16(intRes);
+		setFlag(flagOF, false);
+		return shortRes;
 	}
 	
 	private byte xor8(byte v1, byte v2) {
