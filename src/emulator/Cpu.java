@@ -343,6 +343,9 @@ public class Cpu {
 			case (byte) 0x1F: // POP DS
 				sreg[regDS] = pop();
 				break;
+			case (byte) 0x2E: // CS:
+				modRM.forceSeg(regCS);
+				break;
 			case (byte) 0x30: // XOR Eb Gb
 				modRM.read();
 				modRM.setMem8(xor8(modRM.getMem8(), modRM.getReg8()));
