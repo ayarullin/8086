@@ -517,11 +517,11 @@ public class Cpu {
 			case (byte) 0xFF: // GRP5 Ev
 				modRM.read();
 				switch (modRM.getRegIdx()) {
-					case 4:
+					case 4: // JMP 
 						ip = modRM.getMem16() & 0xFFFF;
 						break;
-					case 6:
-						push(modRM.getMem16()); // PUSH
+					case 6: // PUSH
+						push(modRM.getMem16()); 
 						break;
 					default:
 						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
