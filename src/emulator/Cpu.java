@@ -442,6 +442,9 @@ public class Cpu {
 				modRM.read();
 				modRM.setSreg(modRM.getMem16());
 				break;
+			case (byte) 0xA2: //MOV Ob AL
+				mem.setWord(sreg[regDS] << 4 + (nextWord() & 0xffff), (byte) reg[regAX]);
+				break;
 			case (byte) 0xAA: // STOSB
 			case (byte) 0xAB: // STOSW
 			case (byte) 0xAC: // LODSB
