@@ -59,6 +59,8 @@ public class Cpu {
 		private byte memIdx;
 		private Integer addr;
 		
+		private Integer forcedSegIdx = null;
+		
 		public void read() throws Exception {
 			byte modRM = nextByte();
 			
@@ -154,6 +156,10 @@ public class Cpu {
 		}
 		
 		private int getAddr(int segIndex, int offs) {
+			if (null != forcedSegIdx) {
+				segIndex = forcedSegIdx;
+				forcedSegIdx = null;
+			}
 			return (sreg[segIndex] << 4) + offs;
 		}
 		
@@ -228,6 +234,10 @@ public class Cpu {
 		
 		public byte getRegIdx() {
 			return regIdx;
+		}
+		
+		public void forceSeg(int regIdx) {
+			forcedSegIdx = regIdx;
 		}
 	}
 	
