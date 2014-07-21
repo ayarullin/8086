@@ -3,6 +3,8 @@ package emulator;
 import java.io.IOException;
 import java.io.InputStream;
 
+import emulator.cpu.Cpu;
+
 public class Emulator {
 	
 	private Memory mem;

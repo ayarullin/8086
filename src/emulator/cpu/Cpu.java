@@ -1,4 +1,4 @@
-package emulator;
+package emulator.cpu;
 
 import java.io.IOException;
 import java.util.logging.FileHandler;
@@ -7,23 +7,15 @@ import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-public class Cpu {
+import emulator.InvalidOpcodeException;
+import emulator.Memory;
 
-	private static final int regAX = 0;
-	private static final int regCX = 1;
-	private static final int regDX = 2;
-	private static final int regBX = 3;
-	private static final int regSP = 4;
-	private static final int regBP = 5;
-	private static final int regSI = 6;
-	private static final int regDI = 7;
+public class Cpu {
 	
-	private static final int regES = 0;
-	private static final int regCS = 1;
-	private static final int regSS = 2;
-	private static final int regDS = 3;
-	
+	private State state;
+
 	// flag masks
+	// TODO: move flags to State
 	private static final int flagCF = 0x0001;
 	private static final int flagPF = 0x0004;
 	private static final int flagAF = 0x0010;
@@ -37,13 +29,9 @@ public class Cpu {
 	private static final int INIT_CS = 0xf000;
     private static final int INIT_IP = 0xfff0;
     private static final int INIT_FLAGS = 0xf002;
-	
-	private int[] reg;
-	private int[] sreg;
-	
+		
 	private int flags;
 	
-	private int ip;
 	private int jump = -1;
 	
 	private int opcodeNum = 0;
@@ -89,21 +77,21 @@ public class Cpu {
 		private int getMode0Address() {
 			switch (memIdx) {
 				case 0:
-					return getAddr(regDS, (short) (reg[regBX] + reg[regSI]));
+					return getAddr(State.DS_INDEX, (short) (state.getBX() + state.getSI()));
 				case 1:
-					return getAddr(regDS, (short) (reg[regBX] + reg[regDI]));
+					return getAddr(State.DS_INDEX, (short) (state.getBX() + state.getDI()));
 				case 2:
-					return getAddr(regSS, (short) (reg[regBP] + reg[regSI]));
+					return getAddr(State.SS_INDEX, (short) (state.getBP() + state.getSI()));
 				case 3:
-					return getAddr(regSS, (short) (reg[regBP] + reg[regDI]));
+					return getAddr(State.SS_INDEX, (short) (state.getBP() + state.getDI()));
 				case 4:
-					return getAddr(regDS, (short) (reg[regSI]));
+					return getAddr(State.DS_INDEX, (short) (state.getSI()));
 				case 5:
-					return getAddr(regDS, (short) (reg[regDI]));
+					return getAddr(State.DS_INDEX, (short) (state.getDI()));
 				case 6:
-					return getAddr(regSS, nextWord());
+					return getAddr(State.SS_INDEX, nextWord());
 				case 7:
-					return getAddr(regDS, (short) (reg[regBX]));
+					return getAddr(State.DS_INDEX, (short) (state.getBX()));
 				default:
 					throw new RuntimeException("Unknown memIdx: " + memIdx);
 			}
@@ -112,21 +100,21 @@ public class Cpu {
 		private int getMode1Address() {
 			switch (memIdx) {
 				case 0:
-					return getAddr(regDS, (short) (reg[regBX] + reg[regSI] + nextByte()));
+					return getAddr(State.DS_INDEX, (short) (state.getBX() + state.getSI() + nextByte()));
 				case 1:
-					return getAddr(regDS, (short) (reg[regBX] + reg[regDI] + nextByte()));
+					return getAddr(State.DS_INDEX, (short) (state.getBX() + state.getDI() + nextByte()));
 				case 2:
-					return getAddr(regSS, (short) (reg[regBP] + reg[regSI] + nextByte()));
+					return getAddr(State.SS_INDEX, (short) (state.getBP() + state.getSI() + nextByte()));
 				case 3:
-					return getAddr(regSS, (short) (reg[regBP] + reg[regDI] + nextByte()));
+					return getAddr(State.SS_INDEX, (short) (state.getBP() + state.getDI() + nextByte()));
 				case 4:
-					return getAddr(regDS, (short) (reg[regSI] + nextByte()));
+					return getAddr(State.DS_INDEX, (short) (state.getSI() + nextByte()));
 				case 5:
-					return getAddr(regDS, (short) (reg[regDI] + nextByte()));
+					return getAddr(State.DS_INDEX, (short) (state.getDI() + nextByte()));
 				case 6:
-					return getAddr(regSS, (short) (reg[regBP] + nextByte()));
+					return getAddr(State.SS_INDEX, (short) (state.getBP() + nextByte()));
 				case 7:
-					return getAddr(regDS, (short) (reg[regBX] + nextByte()));
+					return getAddr(State.DS_INDEX, (short) (state.getBX() + nextByte()));
 				default:
 					throw new RuntimeException("Unknown memIdx: " + memIdx);
 			}
@@ -135,21 +123,21 @@ public class Cpu {
 		private int getMode2Address() {
 			switch (memIdx) {
 				case 0:
-					return getAddr(regDS, (short) (reg[regBX] + reg[regSI] + nextWord()));
+					return getAddr(State.DS_INDEX, (short) (state.getBX() + state.getSI() + nextWord()));
 				case 1:
-					return getAddr(regDS, (short) (reg[regBX] + reg[regDI] + nextWord()));
+					return getAddr(State.DS_INDEX, (short) (state.getBX() + state.getDI() + nextWord()));
 				case 2:
-					return getAddr(regSS, (short) (reg[regBP] + reg[regSI] + nextWord()));
+					return getAddr(State.SS_INDEX, (short) (state.getBP() + state.getSI() + nextWord()));
 				case 3:
-					return getAddr(regSS, (short) (reg[regBP] + reg[regDI] + nextWord()));
+					return getAddr(State.SS_INDEX, (short) (state.getBP() + state.getDI() + nextWord()));
 				case 4:
-					return getAddr(regDS, (short) (reg[regSI] + nextWord()));
+					return getAddr(State.DS_INDEX, (short) (state.getSI() + nextWord()));
 				case 5:
-					return getAddr(regDS, (short) (reg[regDI] + nextWord()));
+					return getAddr(State.DS_INDEX, (short) (state.getDI() + nextWord()));
 				case 6:
-					return getAddr(regSS, (short) (reg[regBP] + nextWord()));
+					return getAddr(State.SS_INDEX, (short) (state.getBP() + nextWord()));
 				case 7:
-					return getAddr(regDS, (short) (reg[regBX] + nextWord()));
+					return getAddr(State.DS_INDEX, (short) (state.getBX() + nextWord()));
 				default:
 					throw new RuntimeException("Unknown memIdx: " + memIdx);
 			}
@@ -160,19 +148,19 @@ public class Cpu {
 				segIndex = forcedSegIdx;
 				forcedSegIdx = null;
 			}
-			return (sreg[segIndex] << 4) + (offs & 0xffff);
+			return (state.getSegReg(segIndex) << 4) + (offs & 0xffff);
 		}
 		
 		public byte getMem8() {
 			if (null == addr) {
-				return (byte) getReg8(memIdx);
+				return (byte) state.getReg8(memIdx);
 			}
 			return mem.getByte(addr);
 		}
 		
 		public void setMem8(byte value) {
 			if (null == addr) {
-				setReg8(memIdx, value);
+				state.setReg8(memIdx, value);
 			} else {
 				mem.setByte(addr, value);
 			}
@@ -180,7 +168,7 @@ public class Cpu {
 		
 		public short getMem16() {
 			if (null == addr) {
-				return (short) reg[memIdx];
+				return (short) state.getReg(memIdx);
 			}
 			
 			return mem.getWord(addr);
@@ -188,48 +176,30 @@ public class Cpu {
 		
 		public void setMem16(short value) {
 			if (null == addr) {
-				reg[memIdx] = value & 0xffff;
+				state.setReg(memIdx, value);
 			} else {
 				mem.setWord(addr, value);
 			}
 		}
 		
 		public byte getReg8() {
-			return getReg8(regIdx);
+			return state.getReg8(regIdx);
 		}
 		
 		public void setReg8(byte value) {
-			setReg8(regIdx, value);
-		}
-		
-		private byte getReg8(byte index) {
-			if ((index & 0x04) != 0) {
-				return (byte) (reg[index & 0x03] >> 8);
-			} else {
-				return (byte) (reg[index & 0x03] & 0xff);
-			}
-		}
-		
-		private void setReg8(byte index, byte value) {
-			if ((index & 0x04) != 0) {
-				reg[index & 0x03] &= 0x00ff;
-				reg[index & 0x03] |= (value << 8) & 0xff00;
-			} else {
-				reg[index & 0x03] &= 0xff00;
-				reg[index & 0x03] |= value & 0x00ff;
-			}
+			state.setReg8(regIdx, value);
 		}
 		
 		public int getReg16() {
-			return reg[regIdx];
+			return state.getReg(regIdx);
 		}
 		
 		public void setSreg(short value) {
-			sreg[regIdx] = value & 0xffff;
+			state.setSegReg(regIdx, value);
 		}
 		
 		public int getSreg() {
-			return sreg[regIdx];
+			return state.getSegReg(regIdx);
 		}
 		
 		public byte getRegIdx() {
@@ -249,23 +219,28 @@ public class Cpu {
 		}
 	}
 	
-	public Cpu(Memory mem) throws SecurityException, IOException {
-		reg = new int[8];
-		sreg = new int[4];
-		
-		sreg[regCS] = INIT_CS;
-		ip = INIT_IP;
-		
-		flags = INIT_FLAGS;
-		
+	public Cpu(Memory mem) throws SecurityException, IOException {		
+	
 		this.mem = mem;
 		
 		modRM = new ModRM();
+		state = new State();
+		
+		reset();
 		
 		logger.setUseParentHandlers(false);
 		Handler logHandler = new FileHandler("cpu.log");
 		logHandler.setFormatter(new LogFormatter());
 		logger.addHandler(logHandler);
+	}
+	
+	public void reset() {
+		state.reset();
+		
+		state.setCS(INIT_CS);
+		state.setIP(INIT_IP);
+		
+		flags = INIT_FLAGS;
 	}
 	
 	private String byteToHex(int v)
@@ -278,21 +253,25 @@ public class Cpu {
 		return Integer.toHexString((v & 0xffff) | 0x10000).substring(1);
 	}
 	
+	/**
+	 * TODO: move to State class
+	 * @return
+	 */
 	private String getStateString()
     {
         StringBuffer sb = new StringBuffer();
-        sb.append(" AX=");  sb.append(wordToHex(reg[regAX]));
-        sb.append("  BX="); sb.append(wordToHex(reg[regBX]));
-        sb.append("  CX="); sb.append(wordToHex(reg[regCX]));
-        sb.append("  DX="); sb.append(wordToHex(reg[regDX]));
-        sb.append("  SI="); sb.append(wordToHex(reg[regSI]));
-        sb.append("  DI="); sb.append(wordToHex(reg[regDI]));
-        sb.append("  BP="); sb.append(wordToHex(reg[regBP]));
-        sb.append("  SP="); sb.append(wordToHex(reg[regSP]));
+        sb.append(" AX=");  sb.append(wordToHex(state.getAX()));
+        sb.append("  BX="); sb.append(wordToHex(state.getBX()));
+        sb.append("  CX="); sb.append(wordToHex(state.getCX()));
+        sb.append("  DX="); sb.append(wordToHex(state.getDX()));
+        sb.append("  SI="); sb.append(wordToHex(state.getSI()));
+        sb.append("  DI="); sb.append(wordToHex(state.getDI()));
+        sb.append("  BP="); sb.append(wordToHex(state.getBP()));
+        sb.append("  SP="); sb.append(wordToHex(state.getSP()));
         //sb.append("\n");
-        sb.append(" DS="); sb.append(wordToHex(sreg[regDS]));
-        sb.append("  ES="); sb.append(wordToHex(sreg[regES]));
-        sb.append("  SS="); sb.append(wordToHex(sreg[regSS]));
+        sb.append(" DS="); sb.append(wordToHex(state.getDS()));
+        sb.append("  ES="); sb.append(wordToHex(state.getES()));
+        sb.append("  SS="); sb.append(wordToHex(state.getSS()));
         sb.append("  flags="); sb.append(wordToHex(flags));
         sb.append(" (");
         sb.append((flags & flagOF) == 0 ? ' ' : 'O');
@@ -308,15 +287,15 @@ public class Cpu {
         //sb.append(")  cycl="); sb.append(cycl);
         //sb.append("\n");
         sb.append(" CS:IP=");
-        sb.append(wordToHex(sreg[regCS]));
+        sb.append(wordToHex(state.getCS()));
         sb.append(":");
-        sb.append(wordToHex(ip - 1));
+        sb.append(wordToHex(state.getIP() - 1));
         sb.append(" ");
         for (int i = 0; i < 16; i++) {
             //sb.append((ip + i == nextip) ? '|' : ' ');
         	sb.append(' ');
             sb.append(byteToHex(
-              mem.getByte((sreg[regCS] << 4) + ip + i - 1)));
+              mem.getByte((state.getCS() << 4) + state.getIP() + i - 1)));
         }
         //sb.append("\n");
         return sb.toString();
@@ -332,22 +311,22 @@ public class Cpu {
 		
 		switch (opcode) {
 			case (byte) 0x06: // PUSH ES
-				push(sreg[regES]);
+				push(state.getES());
 				break;
 			case (byte) 0x07: // POP ES
-				sreg[regES] = pop();
+				state.setES(pop());
 				break;
 			case (byte) 0x1E: // PUSH DS
-				push(sreg[regDS]);
+				push(state.getDS());
 				break;
 			case (byte) 0x1F: // POP DS
-				sreg[regDS] = pop();
+				state.setDS(pop());
 				break;
 			case (byte) 0x26: // ES:
-				modRM.forceSeg(regES);
+				modRM.forceSeg(State.ES_INDEX);
 				break;
 			case (byte) 0x2E: // CS:
-				modRM.forceSeg(regCS);
+				modRM.forceSeg(State.CS_INDEX);
 				break;
 			case (byte) 0x30: // XOR Eb Gb
 				modRM.read();
@@ -365,7 +344,7 @@ public class Cpu {
 			case (byte) 0x55: // PUSH BP
 			case (byte) 0x56: // PUSH SI
 			case (byte) 0x57: // PUSH DI
-				push(reg[opcode & 0x07]);
+				push(state.getReg(opcode & 0x07));
 				break;
 			case (byte) 0x58: // POP AX
 			case (byte) 0x59: // POP CD
@@ -375,25 +354,25 @@ public class Cpu {
 			case (byte) 0x5D: // POP BP
 			case (byte) 0x5E: // POP SI
 			case (byte) 0x5F: // POP DI
-				reg[opcode & 0x07] = pop();
+				state.setReg(opcode & 0x07, pop());
 				break;
 			case (byte) 0x72: // JB Jb
 				if (getFlag(flagCF)) {
-					ip = ip + nextByte() + 1;
+					state.setIP(state.getIP() + nextByte() + 1);
 				} else {
 					nextByte();
 				}
 				break;
 			case (byte) 0x76: // JBE Jb
 				if (getFlag(flagCF) || getFlag(flagZF)) {
-					ip = ip + nextByte() + 1;
+					state.setIP(state.getIP() + nextByte() + 1);
 				} else {
 					nextByte();
 				}
 				break;
 			case (byte) 0x77: // JA Jb
 				if (!getFlag(flagCF) && !getFlag(flagZF)) {
-					ip = ip + nextByte() + 1;
+					state.setIP(state.getIP() + nextByte() + 1);
 				} else {
 					nextByte();
 				}
@@ -446,7 +425,7 @@ public class Cpu {
 				modRM.setSreg(modRM.getMem16());
 				break;
 			case (byte) 0xA2: //MOV Ob AL
-				mem.setWord(sreg[regDS] << 4 + (nextWord() & 0xffff), (byte) reg[regAX]);
+				mem.setByte(state.getDS() << 4 + (nextWord() & 0xffff), state.getAL());
 				break;
 			case (byte) 0xAA: // STOSB
 			case (byte) 0xAB: // STOSW
@@ -460,15 +439,11 @@ public class Cpu {
 			case (byte) 0xB1: // MOV CL Ib
 			case (byte) 0xB2: // MOV DL Ib
 			case (byte) 0xB3: // MOV BL Ib
-				reg[opcode & 0x0f] &= 0xff00;
-				reg[opcode & 0x0f] |= nextByte() & 0x00ff;
-				break;
 			case (byte) 0xB4: // MOV AH Ib
 			case (byte) 0xB5: // MOV CH Ib
 			case (byte) 0xB6: // MOV DH Ib
 			case (byte) 0xB7: // MOV BH Ib
-				reg[opcode & 0x03] &= 0x00ff;
-				reg[opcode & 0x03] |= (nextByte() & 0x00ff) << 8;
+				state.setReg8(opcode & 0x07, nextByte());
 				break;
 			case (byte) 0xB8: // MOV AX Iv
 			case (byte) 0xB9: // MOV CX Iv
@@ -478,10 +453,10 @@ public class Cpu {
 			case (byte) 0xBD: // MOV BP Iv
 			case (byte) 0xBE: // MOV SI Iv
 			case (byte) 0xBF: // MOV DI Iv
-				reg[opcode & 0x07] = nextWord();
+				state.setReg(opcode & 0x07, nextWord());
 				break;
 			case (byte) 0xC3: // RET
-				ip = pop() & 0xffff;
+				state.setIP(pop());
 				break;
 			case (byte) 0xC6: // MOV Eb Ib
 				modRM.read();
@@ -495,11 +470,11 @@ public class Cpu {
 				interrupt(nextByte());
 				break;
 			case (byte) 0xE6: // OUT Ib AL
-				outb(nextByte(), (byte) (reg[regAX] & 0xff));
+				outb(nextByte(), state.getAL());
 				break;
 			case (byte) 0xE8: // CALL Jv
-				push(ip + 2);
-				ip += nextWord() + 2;
+				push(state.getIP() + 2);
+				state.setIP(state.getIP() + nextWord() + 2);
 				break;
 			case (byte) 0xEA: // JMP Ap (far)
 				opJmpAp();
@@ -515,7 +490,7 @@ public class Cpu {
 				}
 				break;
 			case (byte) 0xF3: // REPZ
-				jump = ip - 1;
+				jump = state.getIP() - 1;
 				break;
 			case (byte) 0xFA: // CLI
 				setFlag(flagIF, false);
@@ -533,7 +508,7 @@ public class Cpu {
 				modRM.read();
 				switch (modRM.getRegIdx()) {
 					case 4: // JMP 
-						ip = modRM.getMem16() & 0xFFFF;
+						state.setIP(modRM.getMem16());
 						break;
 					case 6: // PUSH
 						push(modRM.getMem16()); 
@@ -554,17 +529,17 @@ public class Cpu {
 		
 		switch (opcode) {
 			case (byte) 0xAB: // STOSW
-				mem.setWord((sreg[regES] << 4) + reg[regDI], (short) reg[regAX]);
-				reg[regDI] = reg[regDI] + diff;
+				mem.setWord((state.getES() << 4) + state.getDI(), (short) state.getAX());
+				state.setDI(state.getDI() + diff);
 				break;
 			default:
 				throw new InvalidOpcodeException(opcode);
 		}
 		
 		if (jump > 0) {
-			reg[regCX] -= 1;
-			if (reg[regCX] > 0) {
-				ip = jump;
+			state.setCX(state.getCX() - 1);
+			if (state.getCX() > 0) {
+				state.setIP(jump);
 			}
 		}
 	}
@@ -637,14 +612,14 @@ public class Cpu {
 	}
 	
 	private void push(int value) {
-		int sp = (reg[regSP] - 2) & 0xffff;
-        reg[regSP] = sp;
-        mem.setWord((sreg[regSS] << 4) + sp, (short) value);
+		int sp = (state.getSP() - 2) & 0xffff;
+        state.setSP(sp);
+        mem.setWord((state.getSS() << 4) + sp, (short) value);
 	}
 	
 	private short pop() {
-		short v = mem.getWord((sreg[regSS] << 4) + reg[regSP]);
-		reg[regSP] = (short) (reg[regSP] + 2);
+		short v = mem.getWord((state.getSS() << 4) + state.getSP());
+		state.setSP(state.getSP() + 2);
 		return v;
 	}
 	
@@ -655,18 +630,18 @@ public class Cpu {
 	
 	private void interrupt(byte intNo) {
 		push(flags);
-		push(sreg[regCS]);
-		push(ip);
-		ip = mem.getWord(4 * intNo) & 0xffff;
-		sreg[regCS] = mem.getWord(4 * intNo + 2) & 0xffff;
+		push(state.getCS());
+		push(state.getIP());
+		state.setIP(mem.getWord(4 * intNo));
+		state.setCS(mem.getWord(4 * intNo + 2));
 		System.out.println(String.format("int: 0x%X", intNo));
 	}
 	
 	private void opJmpAp() {
 		short newIP = nextWord();
 		short newCS = nextWord();
-		sreg[regCS] = newCS & 0xffff;
-		ip = newIP & 0xffff;
+		state.setCS(newCS);
+		state.setIP(newIP);
 	}
 	
 	public void updateFlags16(int v) {
@@ -713,14 +688,14 @@ public class Cpu {
 	}
 	
 	private byte nextByte() {
-		byte result = mem.getByte((sreg[regCS] << 4) + ip);
-		ip += 1;
+		byte result = mem.getByte((state.getCS() << 4) + state.getIP());
+		state.setIP(state.getIP() + 1);
 		return result;
 	}
 	
 	private short nextWord() {
-		short result = mem.getWord((sreg[regCS] << 4) + ip);
-		ip += 2;
+		short result = mem.getWord((state.getCS() << 4) + state.getIP());
+		state.setIP(state.getIP() + 2);
 		return result;
 	}
 }
