@@ -343,6 +343,9 @@ public class Cpu {
 			case (byte) 0x1F: // POP DS
 				sreg[regDS] = pop();
 				break;
+			case (byte) 0x26: // ES:
+				modRM.forceSeg(regES);
+				break;
 			case (byte) 0x2E: // CS:
 				modRM.forceSeg(regCS);
 				break;
