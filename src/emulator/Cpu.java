@@ -381,6 +381,13 @@ public class Cpu {
 					nextByte();
 				}
 				break;
+			case (byte) 0x76: // JBE Jb
+				if (getFlag(flagCF) || getFlag(flagZF)) {
+					ip = ip + nextByte() + 1;
+				} else {
+					nextByte();
+				}
+				break;
 			case (byte) 0x77: // JA Jb
 				if (!getFlag(flagCF) && !getFlag(flagZF)) {
 					ip = ip + nextByte() + 1;
