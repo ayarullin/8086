@@ -180,6 +180,10 @@ public class Cpu {
 			return state.getReg(regIdx);
 		}
 		
+		public void setReg16(int value) {
+			state.setReg(regIdx, value);
+		}
+		
 		public void setSreg(short value) {
 			state.setSegReg(regIdx, value);
 		}
@@ -190,6 +194,10 @@ public class Cpu {
 		
 		public byte getRegIdx() {
 			return regIdx;
+		}
+		
+		public Integer getAddress() {
+			return addr;
 		}
 		
 		public void forceSeg(int regIdx) {
@@ -385,6 +393,11 @@ public class Cpu {
 				break;
 			case (byte) 0xC3: // RET
 				state.setIP(pop());
+				break;
+			case (byte) 0xC4: // LES Gv Mp
+				modRM.read();
+				modRM.setReg16(mem.getWord(modRM.getAddress()));
+				state.setES(mem.getWord(modRM.getAddress() + 2));
 				break;
 			case (byte) 0xC6: // MOV Eb Ib
 				modRM.read();
