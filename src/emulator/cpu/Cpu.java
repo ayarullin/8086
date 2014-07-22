@@ -358,6 +358,10 @@ public class Cpu {
 				modRM.read();
 				modRM.setReg8(modRM.getMem8());
 				break;
+			case (byte) 0x8B: // MOV Gv Ev
+				modRM.read();
+				modRM.setReg16(modRM.getMem16());
+				break;
 			case (byte) 0x8C: // MOV Ew Sw
 				modRM.read();
 				modRM.setMem16((short)modRM.getSreg());
