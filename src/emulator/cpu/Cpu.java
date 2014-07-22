@@ -315,6 +315,26 @@ public class Cpu {
 				modRM.read();
 				modRM.setMem16(xor16(modRM.getMem16(), modRM.getReg16()));
 				break;
+			case (byte) 0x40: // INC AX
+			case (byte) 0x41: // INC CX
+			case (byte) 0x42: // INC DX
+			case (byte) 0x43: // INC BX
+			case (byte) 0x44: // INC SP
+			case (byte) 0x45: // INC BP
+			case (byte) 0x46: // INC SI
+			case (byte) 0x47: // INC DI
+				state.setReg(opcode & 0x07, inc16(state.getReg(opcode & 0x07)));
+				break;
+			case (byte) 0x48: // DEC AX
+			case (byte) 0x49: // DEC CX
+			case (byte) 0x4A: // DEC DX
+			case (byte) 0x4B: // DEC BX
+			case (byte) 0x4C: // DEC SP
+			case (byte) 0x4D: // DEC BP
+			case (byte) 0x4E: // DEC SI
+			case (byte) 0x4F: // DEC DI
+				state.setReg(opcode & 0x07, dec16(state.getReg(opcode & 0x07)));
+				break;
 			case (byte) 0x50: // PUSH AX
 			case (byte) 0x51: // PUSH CX
 			case (byte) 0x52: // PUSH DX
@@ -614,6 +634,20 @@ public class Cpu {
 		state.setAuxiliaryFlag(false); // ??
 		updateFlags16(intRes);
 		
+		return result;
+	}
+	
+	private short inc16(int v) {
+		boolean oldCarry = state.getCarryFlag();
+		short result = add16(v, 1);
+		state.setCarryFlag(oldCarry);
+		return result;
+	}
+	
+	private short dec16(int v) {
+		boolean oldCarry = state.getCarryFlag();
+		short result = sub16(v, 1);
+		state.setCarryFlag(oldCarry);
 		return result;
 	}
 	
