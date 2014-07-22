@@ -434,10 +434,16 @@ public class Cpu {
 				modRM.read();
 				modRM.setSreg(modRM.getMem16());
 				break;
-			case (byte) 0xA2: //MOV Ob AL
+			case (byte) 0xA0: // MOV AL Ob
+				state.setAL(mem.getByte((state.getDS() << 4) + (nextWord() & 0xffff)));
+				break;
+			case (byte) 0xA1: // MOV AX Ov
+				state.setAX(mem.getWord((state.getDS() << 4) + (nextWord() & 0xffff)));
+				break;
+			case (byte) 0xA2: // MOV Ob AL
 				mem.setByte((state.getDS() << 4) + (nextWord() & 0xffff), state.getAL());
 				break;
-			case (byte) 0xA3: //MOV Ov AX
+			case (byte) 0xA3: // MOV Ov AX
 				mem.setWord((state.getDS() << 4) + (nextWord() & 0xffff), (short) state.getAX());
 				break;
 			case (byte) 0xAA: // STOSB
