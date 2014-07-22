@@ -1,4 +1,4 @@
-package emulator;
+package emulator.cpu;
 
 public class InvalidOpcodeException extends Exception {
 

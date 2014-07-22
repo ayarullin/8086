@@ -7,7 +7,6 @@ import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import emulator.InvalidOpcodeException;
 import emulator.Memory;
 
 public class Cpu {

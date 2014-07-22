@@ -289,16 +289,6 @@ public class State {
 	private boolean getFlag(int mask) {
 		return (flags & mask) == mask;
 	}
-	
-	/**
-	 * TODO: delete
-	 * @param v
-	 * @return
-	 */
-	private String byteToHex(int v)
-	{
-		return Integer.toHexString((v & 0xff) | 0x100).substring(1);
-	}
 
 	/** 
 	 * TODO: delete
