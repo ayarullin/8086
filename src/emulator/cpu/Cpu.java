@@ -13,25 +13,11 @@ import emulator.Memory;
 public class Cpu {
 	
 	private State state;
-
-	// flag masks
-	// TODO: move flags to State
-	private static final int flagCF = 0x0001;
-	private static final int flagPF = 0x0004;
-	private static final int flagAF = 0x0010;
-	private static final int flagZF = 0x0040;
-	private static final int flagSF = 0x0080;
-	private static final int flagTF = 0x0100;
-	private static final int flagIF = 0x0200;
-	private static final int flagDF = 0x0400;
-    private static final int flagOF = 0x0800;
 	
 	private static final int INIT_CS = 0xf000;
     private static final int INIT_IP = 0xfff0;
     private static final int INIT_FLAGS = 0xf002;
-		
-	private int flags;
-	
+			
 	private int jump = -1;
 	
 	private int opcodeNum = 0;
@@ -240,71 +226,13 @@ public class Cpu {
 		state.setCS(INIT_CS);
 		state.setIP(INIT_IP);
 		
-		flags = INIT_FLAGS;
+		state.setFlags(INIT_FLAGS);
 	}
-	
-	private String byteToHex(int v)
-	{
-		return Integer.toHexString((v & 0xff) | 0x100).substring(1);
-	}
-
-	private String wordToHex(int v)
-	{
-		return Integer.toHexString((v & 0xffff) | 0x10000).substring(1);
-	}
-	
-	/**
-	 * TODO: move to State class
-	 * @return
-	 */
-	private String getStateString()
-    {
-        StringBuffer sb = new StringBuffer();
-        sb.append(" AX=");  sb.append(wordToHex(state.getAX()));
-        sb.append("  BX="); sb.append(wordToHex(state.getBX()));
-        sb.append("  CX="); sb.append(wordToHex(state.getCX()));
-        sb.append("  DX="); sb.append(wordToHex(state.getDX()));
-        sb.append("  SI="); sb.append(wordToHex(state.getSI()));
-        sb.append("  DI="); sb.append(wordToHex(state.getDI()));
-        sb.append("  BP="); sb.append(wordToHex(state.getBP()));
-        sb.append("  SP="); sb.append(wordToHex(state.getSP()));
-        //sb.append("\n");
-        sb.append(" DS="); sb.append(wordToHex(state.getDS()));
-        sb.append("  ES="); sb.append(wordToHex(state.getES()));
-        sb.append("  SS="); sb.append(wordToHex(state.getSS()));
-        sb.append("  flags="); sb.append(wordToHex(flags));
-        sb.append(" (");
-        sb.append((flags & flagOF) == 0 ? ' ' : 'O');
-        sb.append((flags & flagDF) == 0 ? ' ' : 'D');
-        sb.append((flags & flagIF) == 0 ? ' ' : 'I');
-        sb.append((flags & flagTF) == 0 ? ' ' : 'T');
-        sb.append((flags & flagSF) == 0 ? ' ' : 'S');
-        sb.append((flags & flagZF) == 0 ? ' ' : 'Z');
-        sb.append((flags & flagAF) == 0 ? ' ' : 'A');
-        sb.append((flags & flagPF) == 0 ? ' ' : 'P');
-        sb.append((flags & flagCF) == 0 ? ' ' : 'C');
-        sb.append(")");
-        //sb.append(")  cycl="); sb.append(cycl);
-        //sb.append("\n");
-        sb.append(" CS:IP=");
-        sb.append(wordToHex(state.getCS()));
-        sb.append(":");
-        sb.append(wordToHex(state.getIP() - 1));
-        sb.append(" ");
-        for (int i = 0; i < 16; i++) {
-            //sb.append((ip + i == nextip) ? '|' : ' ');
-        	sb.append(' ');
-            sb.append(byteToHex(
-              mem.getByte((state.getCS() << 4) + state.getIP() + i - 1)));
-        }
-        //sb.append("\n");
-        return sb.toString();
-    }
 	
 	public void step() throws Exception {
 		byte opcode = nextByte();
 		
-		logger.info(String.format("%s: 0x%X ", ++opcodeNum, opcode) + getStateString());
+		logger.info(String.format("%s: 0x%X ", ++opcodeNum, opcode) + state);
 		if (opcodeNum > 100000) {
 			System.exit(0);
 		}
@@ -357,21 +285,21 @@ public class Cpu {
 				state.setReg(opcode & 0x07, pop());
 				break;
 			case (byte) 0x72: // JB Jb
-				if (getFlag(flagCF)) {
+				if (state.getCarryFlag()) {
 					state.setIP(state.getIP() + nextByte() + 1);
 				} else {
 					nextByte();
 				}
 				break;
 			case (byte) 0x76: // JBE Jb
-				if (getFlag(flagCF) || getFlag(flagZF)) {
+				if (state.getCarryFlag() || state.getZeroFlag()) {
 					state.setIP(state.getIP() + nextByte() + 1);
 				} else {
 					nextByte();
 				}
 				break;
 			case (byte) 0x77: // JA Jb
-				if (!getFlag(flagCF) && !getFlag(flagZF)) {
+				if (!state.getCarryFlag() && !state.getZeroFlag()) {
 					state.setIP(state.getIP() + nextByte() + 1);
 				} else {
 					nextByte();
@@ -493,16 +421,16 @@ public class Cpu {
 				jump = state.getIP() - 1;
 				break;
 			case (byte) 0xFA: // CLI
-				setFlag(flagIF, false);
+				state.setInterruptFlag(false);
 				break;
 			case (byte) 0xFB: // STI
-				setFlag(flagIF, true);
+				state.setInterruptFlag(true);
 				break;
 			case (byte) 0xFC: // CLD
-				setFlag(flagDF, false);
+				state.setDirectionFlag(false);
 				break;
 			case (byte) 0xFD: // STD
-				setFlag(flagDF, true);
+				state.setDirectionFlag(true);
 				break;
 			case (byte) 0xFF: // GRP5 Ev
 				modRM.read();
@@ -525,7 +453,7 @@ public class Cpu {
 	
 	private void processString(byte opcode) throws InvalidOpcodeException {
 		
-		int diff = (getFlag(flagDF) ? -1 : 1) << (opcode & 1);
+		int diff = (state.getDirectionFlag() ? -1 : 1) << (opcode & 1);
 		
 		switch (opcode) {
 			case (byte) 0xAB: // STOSW
@@ -547,24 +475,24 @@ public class Cpu {
 	private short add16(int v1, int v2) {
 		updateFlags16((v1 & 0xffff) + (v2 & 0xffff));
 		int intRes = (short) v1 + (short) v2;
-		setFlag(flagOF, intRes > 0x7fff || intRes < -0x8000);
-		setFlag(flagAF, (v1 & 0xf) + (v2 & 0xf) > 0xf);
+		state.setOverflowFlag(intRes > 0x7fff || intRes < -0x8000);
+		state.setAuxiliaryFlag((v1 & 0xf) + (v2 & 0xf) > 0xf);
 		return (short) intRes;
 	}
 	
 	private short sub8(byte v1, byte v2) {
 		updateFlags8((short) ((v1 & 0xff) - (v2 & 0xff)));
 		short shortResult = (short) (v1 - v2);
-		setFlag(flagOF, shortResult > 0x7f || shortResult < -0x80);
-		setFlag(flagAF, (v1 & 0xf) < (v2 & 0xf));
+		state.setOverflowFlag(shortResult > 0x7f || shortResult < -0x80);
+		state.setAuxiliaryFlag((v1 & 0xf) < (v2 & 0xf));
 		return (byte) shortResult;
 	}
 	
 	private short sub16(int v1, int v2) {
 		updateFlags16((v1 & 0xffff) - (v2 & 0xffff));
 		int intRes = (short) v1 - (short) v2;
-		setFlag(flagOF, intRes > 0x7fff || intRes < -0x8000);
-		setFlag(flagAF, (v1 & 0xf) < (v2 & 0xf));
+		state.setOverflowFlag(intRes > 0x7fff || intRes < -0x8000);
+		state.setAuxiliaryFlag((v1 & 0xf) < (v2 & 0xf));
 		return (short) intRes;
 	}
 	
@@ -572,7 +500,7 @@ public class Cpu {
 		int intRes = (v1 & 0xffff) & (v2 & 0xffff);
 		short shortRes = (short) intRes;
 		updateFlags16(intRes);
-		setFlag(flagOF, false);
+		state.setOverflowFlag(false);
 		return shortRes;
 	}
 	
@@ -580,9 +508,9 @@ public class Cpu {
 		short shortResult = (short) (((short) v1 & 0xff) ^ ((short) v2 & 0xff));
 		byte result = (byte) shortResult;
 		
-		setFlag(flagOF, false);
-		setFlag(flagCF, false);
-		setFlag(flagAF, false); // ??
+		state.setOverflowFlag(false);
+		state.setCarryFlag(false);
+		state.setAuxiliaryFlag(false); // ??
 		updateFlags8(shortResult);
 		
 		return result;
@@ -592,9 +520,9 @@ public class Cpu {
 		int intRes = (v1 & 0xffff) ^ (v2 & 0xffff);
 		short result = (short) intRes;
 		
-		setFlag(flagOF, false);
-		setFlag(flagCF, false);
-		setFlag(flagAF, false); // ??
+		state.setOverflowFlag(false);
+		state.setCarryFlag(false);
+		state.setAuxiliaryFlag(false); // ??
 		updateFlags16(intRes);
 		
 		return result;
@@ -604,9 +532,9 @@ public class Cpu {
 		v <<= count;
 		
 		updateFlags16(v);
-		setFlag(flagCF, (v & 0x10000) == 0x10000);
-		setFlag(flagAF, (v & 0x10) != 0);
-		setFlag(flagOF, ((v >> 16) & 0x1) != ((v >> 15) & 0x1));
+		state.setCarryFlag((v & 0x10000) == 0x10000);
+		state.setAuxiliaryFlag((v & 0x10) != 0);
+		state.setOverflowFlag(((v >> 16) & 0x1) != ((v >> 15) & 0x1));
 		
 		return (short) v;
 	}
@@ -629,7 +557,7 @@ public class Cpu {
 	}
 	
 	private void interrupt(byte intNo) {
-		push(flags);
+		push(state.getFlags());
 		push(state.getCS());
 		push(state.getIP());
 		state.setIP(mem.getWord(4 * intNo));
@@ -645,8 +573,8 @@ public class Cpu {
 	}
 	
 	public void updateFlags16(int v) {
-		setFlag(flagCF, (v & 0xFFFF0000) != 0);
-		setFlag(flagZF, (short) v == 0);
+		state.setCarryFlag((v & 0xFFFF0000) != 0);
+		state.setZeroFlag((short) v == 0);
 		
 		byte byteVal = (byte) v;
 		byte bitSum = 0;
@@ -655,14 +583,14 @@ public class Cpu {
 				bitSum += 1;
 			}
 		}
-		setFlag(flagPF, bitSum % 2 == 0);
+		state.setParityFlag(bitSum % 2 == 0);
 		
-		setFlag(flagSF, ((short) v & 0x8000) != 0);
+		state.setSignFlag(((short) v & 0x8000) != 0);
 	}
 	
 	public void updateFlags8(short v) {
-		setFlag(flagCF, (v & 0xFF00) != 0);
-		setFlag(flagZF, v == 0);
+		state.setCarryFlag((v & 0xFF00) != 0);
+		state.setZeroFlag(v == 0);
 		
 		byte bitSum = 0;
 		for (byte b = 1; b != 0; b <<= 1) {
@@ -670,21 +598,9 @@ public class Cpu {
 				bitSum += 1;
 			}
 		}
-		setFlag(flagPF, bitSum % 2 == 0);
+		state.setParityFlag(bitSum % 2 == 0);
 
-		setFlag(flagSF, (v & 0x80) != 0);
-	}
-	
-	private void setFlag(int mask, boolean value) {
-		if (value) {
-			flags |= mask;
-		} else {
-			flags &= ~mask;
-		}
-	}
-	
-	private boolean getFlag(int mask) {
-		return (flags & mask) == mask;
+		state.setSignFlag((v & 0x80) != 0);
 	}
 	
 	private byte nextByte() {
