@@ -245,6 +245,28 @@ public class Cpu {
 		}
 		
 		switch (opcode) {
+			case (byte) 0x00: // ADD Eb Gb
+				modRM.read();
+				modRM.setMem8(add8(modRM.getMem8(), modRM.getReg8()));
+				break;
+			case (byte) 0x01: // ADD Ev Gv
+				modRM.read();
+				modRM.setMem16(add16(modRM.getMem16(), modRM.getReg16()));
+				break;
+			case (byte) 0x02: // ADD Gb Eb
+				modRM.read();
+				modRM.setReg8(add8(modRM.getReg8(), modRM.getMem8()));
+				break;
+			case (byte) 0x03: // ADD Gv Ev
+				modRM.read();
+				modRM.setReg16(add16(modRM.getReg16(), modRM.getMem16()));
+				break;
+			case (byte) 0x04: // ADD AL Ib
+				state.setAL(add8(state.getAL(), nextByte()));
+				break;
+			case (byte) 0x05: // ADD AX Iv
+				state.setAX(add16(state.getAX(), nextWord()));
+				break;
 			case (byte) 0x06: // PUSH ES
 				push(state.getES());
 				break;
@@ -496,6 +518,14 @@ public class Cpu {
 				state.setIP(jump);
 			}
 		}
+	}
+
+	private byte add8(byte v1, byte v2) {
+		short shortResult = (short)((v1 & 0xff) + (v2 & 0xff));
+		byte byteResult = (byte) shortResult;
+		updateFlags8(shortResult);
+		state.setAuxiliaryFlag((v1 & 0xf) + (v2 & 0xf) > 0xf);
+		return byteResult;
 	}
 	
 	private short add16(int v1, int v2) {

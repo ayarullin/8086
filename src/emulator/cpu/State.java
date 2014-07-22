@@ -170,13 +170,16 @@ public class State {
 		ip = v & 0xffff;
 	}
 	
-	
-	
 	public byte getAL() {
 		return (byte) reg[AX_INDEX];
 	}
 	
 	
+	
+	public void setAL(byte v) {
+		reg[AX_INDEX] &= 0xff00;
+		reg[AX_INDEX] |= v & 0xff;
+	}
 	
 	
 	
