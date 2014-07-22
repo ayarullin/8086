@@ -315,6 +315,9 @@ public class Cpu {
 			case (byte) 0x80: // GRP1 Eb Ib
 				modRM.read();
 				switch (modRM.getRegIdx()) {
+					case 4: // AND
+						modRM.setMem8(and8(modRM.getMem8(), nextByte()));
+						break;
 					case 7: // CMP
 						sub8(modRM.getMem8(), nextByte());
 						break;
@@ -513,6 +516,14 @@ public class Cpu {
 		state.setOverflowFlag(intRes > 0x7fff || intRes < -0x8000);
 		state.setAuxiliaryFlag((v1 & 0xf) < (v2 & 0xf));
 		return (short) intRes;
+	}
+	
+	private byte and8(byte v1, byte v2) {
+		short shortResult = (short)((v1 & 0xff) & (v2 & 0xff));
+		byte byteResult = (byte) shortResult;
+		updateFlags8(shortResult);
+		state.setOverflowFlag(false);
+		return byteResult;
 	}
 	
 	private short and16(int v1, int v2) {
