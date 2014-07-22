@@ -525,6 +525,19 @@ public class Cpu {
 			case (byte) 0xFD: // STD
 				state.setDirectionFlag(true);
 				break;
+			case (byte) 0xFE: // GRP4 Eb
+				modRM.read();
+				switch (modRM.getRegIdx()) {
+					case 0: // INC
+						modRM.setMem8(inc8(modRM.getMem8()));
+						break;
+					case 1: // DEC
+						modRM.setMem8(dec8(modRM.getMem8()));
+						break;
+					default: 
+						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
+				}
+				break;
 			case (byte) 0xFF: // GRP5 Ev
 				modRM.read();
 				switch (modRM.getRegIdx()) {
@@ -581,7 +594,7 @@ public class Cpu {
 		return (short) intRes;
 	}
 	
-	private short sub8(byte v1, byte v2) {
+	private byte sub8(byte v1, byte v2) {
 		updateFlags8((short) ((v1 & 0xff) - (v2 & 0xff)));
 		short shortResult = (short) (v1 - v2);
 		state.setOverflowFlag(shortResult > 0x7f || shortResult < -0x80);
@@ -637,9 +650,23 @@ public class Cpu {
 		return result;
 	}
 	
+	private byte inc8(byte v) {
+		boolean oldCarry = state.getCarryFlag();
+		byte result = add8(v, (byte) 1);
+		state.setCarryFlag(oldCarry);
+		return result;
+	}
+	
 	private short inc16(int v) {
 		boolean oldCarry = state.getCarryFlag();
 		short result = add16(v, 1);
+		state.setCarryFlag(oldCarry);
+		return result;
+	}
+	
+	private byte dec8(byte v) {
+		boolean oldCarry = state.getCarryFlag();
+		byte result = sub8(v, (byte) 1);
 		state.setCarryFlag(oldCarry);
 		return result;
 	}
