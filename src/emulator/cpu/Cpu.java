@@ -470,6 +470,9 @@ public class Cpu {
 			case (byte) 0xE6: // OUT Ib AL
 				outb(nextByte(), state.getAL());
 				break;
+			case (byte) 0xEE: // OUT DX AL
+				outb((short) state.getDX(), state.getAL());
+				break;
 			case (byte) 0xE8: // CALL Jv
 				push(state.getIP() + 2);
 				state.setIP(state.getIP() + nextWord() + 2);
@@ -637,7 +640,7 @@ public class Cpu {
 		return v;
 	}
 	
-	private void outb(byte port, byte val) {
+	private void outb(short port, byte val) {
 		// TODO: DMA implementation
 		System.out.println(String.format("out 0x%X, 0x%X", port, val));
 	}
