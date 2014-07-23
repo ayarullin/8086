@@ -519,6 +519,16 @@ public class Cpu {
 			case (byte) 0xF3: // REPZ
 				jump = state.getIP() - 1;
 				break;
+			case (byte) 0xF6: // GRP3a Eb
+				modRM.read();
+				switch (modRM.getRegIdx()) {
+					case 0: // TEST
+						and8(modRM.getMem8(), nextByte());
+						break;
+					default:
+						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
+				}
+				break;
 			case (byte) 0xFA: // CLI
 				state.setInterruptFlag(false);
 				break;
