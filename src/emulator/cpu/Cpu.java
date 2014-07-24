@@ -74,7 +74,7 @@ public class Cpu {
 				case 5:
 					return getAddr(State.DS_INDEX, (short) (state.getDI()));
 				case 6:
-					return getAddr(State.SS_INDEX, nextWord());
+					return getAddr(State.DS_INDEX, nextWord());
 				case 7:
 					return getAddr(State.DS_INDEX, (short) (state.getBX()));
 				default:
