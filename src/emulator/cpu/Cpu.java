@@ -425,6 +425,9 @@ public class Cpu {
 			case (byte) 0x80: // GRP1 Eb Ib
 				modRM.read();
 				switch (modRM.getRegIdx()) {
+					case 2:
+						modRM.setMem8(adc8(modRM.getMem8(), nextByte()));
+						break;
 					case 4: // AND
 						modRM.setMem8(and8(modRM.getMem8(), nextByte()));
 						break;
@@ -666,20 +669,38 @@ public class Cpu {
 		}
 	}
 
-	private byte add8(byte v1, byte v2) {
-		short shortResult = (short)((v1 & 0xff) + (v2 & 0xff));
+	private byte add8(byte v1, byte v2, boolean useCarry) {
+		int carry = (useCarry && state.getCarryFlag()) ? 1 : 0;
+		short shortResult = (short)((v1 & 0xff) + (v2 & 0xff) + carry);
 		byte byteResult = (byte) shortResult;
 		updateFlags8(shortResult);
-		state.setAuxiliaryFlag((v1 & 0xf) + (v2 & 0xf) > 0xf);
+		state.setAuxiliaryFlag((v1 & 0xf) + (v2 & 0xf) + carry > 0xf);
 		return byteResult;
 	}
 	
-	private short add16(int v1, int v2) {
-		updateFlags16((v1 & 0xffff) + (v2 & 0xffff));
-		int intRes = (short) v1 + (short) v2;
+	private short add16(int v1, int v2, boolean useCarry) {
+		int carry = (useCarry && state.getCarryFlag()) ? 1 : 0;
+		updateFlags16((v1 & 0xffff) + (v2 & 0xffff) + carry);
+		int intRes = (short) v1 + (short) v2 + carry;
 		state.setOverflowFlag(intRes > 0x7fff || intRes < -0x8000);
-		state.setAuxiliaryFlag((v1 & 0xf) + (v2 & 0xf) > 0xf);
+		state.setAuxiliaryFlag((v1 & 0xf) + (v2 & 0xf) + carry > 0xf);
 		return (short) intRes;
+	}
+	
+	private byte add8(byte v1, byte v2) {
+		return add8(v1, v2, false);
+	}
+	
+	private short add16(int v1, int v2) {
+		return add16(v1, v2, false);
+	}
+	
+	private byte adc8(byte v1, byte v2) {
+		return add8(v1, v2, true);
+	}
+	
+	private short adc16(int v1, int v2) {
+		return add16(v1, v2, true);
 	}
 	
 	private byte sub8(byte v1, byte v2) {
@@ -771,7 +792,6 @@ public class Cpu {
 		state.setAH((byte)(result >> 8));
 		state.setAL((byte)result);
 
-		// update flags
 		if (state.getAH() == 0) {
 			state.setOverflowFlag(false);
 			state.setCarryFlag(false);
