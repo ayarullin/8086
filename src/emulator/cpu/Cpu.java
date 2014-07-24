@@ -273,6 +273,34 @@ public class Cpu {
 			case (byte) 0x07: // POP ES
 				state.setES(pop());
 				break;
+			case (byte) 0x10: // ADC Eb Gb
+				modRM.read();
+				modRM.setMem8(adc8(modRM.getMem8(), modRM.getReg8()));
+				break;
+			case (byte) 0x11: // ADC Ev Gv
+				modRM.read();
+				modRM.setMem16(adc16(modRM.getMem16(), modRM.getReg16()));
+				break;
+			case (byte) 0x12: // ADC Gb Eb
+				modRM.read();
+				modRM.setReg8(adc8(modRM.getReg8(), modRM.getMem8()));
+				break;
+			case (byte) 0x13: // ADC Gv Ev
+				modRM.read();
+				modRM.setReg16(adc16(modRM.getReg16(), modRM.getMem16()));
+				break;
+			case (byte) 0x14: // ADC AL Ib
+				state.setAL(adc8(state.getAL(), nextByte()));
+				break;
+			case (byte) 0x15: // ADC AX Iv
+				state.setAX(adc16(state.getAX(), nextWord()));
+				break;
+			case (byte) 0x16: // PUSH SS
+				push(state.getSS());
+				break;
+			case (byte) 0x17: // POP SS
+				state.setSS(pop());
+				break;
 			case (byte) 0x1E: // PUSH DS
 				push(state.getDS());
 				break;
