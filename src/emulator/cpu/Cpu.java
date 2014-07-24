@@ -128,7 +128,7 @@ public class Cpu {
 			}
 		}
 		
-		private int getAddr(int segIndex, int offs) {
+		public int getAddr(int segIndex, int offs) {
 			if (null != forcedSegIdx) {
 				segIndex = forcedSegIdx;
 				forcedSegIdx = null;
@@ -597,6 +597,10 @@ public class Cpu {
 				mem.setWord((state.getES() << 4) + state.getDI(), (short) state.getAX());
 				state.setDI(state.getDI() + diff);
 				break;
+			case (byte) 0xAC: // LODSB
+				state.setAL(mem.getByte(modRM.getAddr(state.getDS(), state.getSI())));
+				state.setSI(state.getSI() + diff);
+				break;
 			default:
 				throw new InvalidOpcodeException(opcode);
 		}
@@ -606,6 +610,7 @@ public class Cpu {
 			if (state.getCX() > 0) {
 				state.setIP(jump);
 			}
+			jump = -1;
 		}
 	}
 
