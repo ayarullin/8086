@@ -387,6 +387,13 @@ public class Cpu {
 					nextByte();
 				}
 				break;
+			case (byte) 0x73: // JNB Jb
+				if (!state.getCarryFlag()) {
+					state.setIP(state.getIP() + nextByte() + 1);
+				} else {
+					nextByte();
+				}
+				break;
 			case (byte) 0x74: // JZ Jb
 				if (state.getZeroFlag()) {
 					state.setIP(state.getIP() + nextByte() + 1);
