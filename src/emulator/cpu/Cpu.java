@@ -500,6 +500,11 @@ public class Cpu {
 			case (byte) 0xCD: // INT Ib
 				interrupt(nextByte());
 				break;
+			case (byte) 0xCF: // IRET
+				state.setIP(pop());
+				state.setCS(pop());
+				state.setFlags(pop());
+				break;
 			case (byte) 0xE6: // OUT Ib AL
 				outb(nextByte(), state.getAL());
 				break;
