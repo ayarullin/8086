@@ -510,6 +510,9 @@ public class Cpu {
 				push(state.getIP() + 2);
 				state.setIP(state.getIP() + nextWord() + 2);
 				break;
+			case (byte) 0xE9: // JMP Jv
+				state.setIP(state.getIP() + nextWord() + 2);
+				break;
 			case (byte) 0xEA: // JMP Ap (far)
 				opJmpAp();
 				break;
