@@ -315,6 +315,31 @@ public class Cpu {
 				modRM.read();
 				modRM.setMem16(xor16(modRM.getMem16(), modRM.getReg16()));
 				break;
+			case (byte) 0x38: // CMP Eb Gb
+				modRM.read();
+				sub8(modRM.getMem8(), modRM.getReg8());
+				break;
+			case (byte) 0x39: // CMP Ev Gv
+				modRM.read();
+				sub16(modRM.getMem16(), modRM.getReg16());
+				break;
+			case (byte) 0x3A: // CMP Gb Eb
+				modRM.read();
+				sub8(modRM.getReg8(), modRM.getMem8());
+				break;
+			case (byte) 0x3B: // CMP Gv Ev
+				modRM.read();
+				sub16(modRM.getReg16(), modRM.getMem16());
+				break;
+			case (byte) 0x3C: // CMP AL Ib
+				sub8(state.getAL(), nextByte());
+				break;
+			case (byte) 0x3D: // CMP AX Iv
+				sub16(state.getAX(), nextWord());
+				break;
+			case (byte) 0x3E: // DS:
+				modRM.forceSeg(State.DS_INDEX);
+				break;
 			case (byte) 0x40: // INC AX
 			case (byte) 0x41: // INC CX
 			case (byte) 0x42: // INC DX
