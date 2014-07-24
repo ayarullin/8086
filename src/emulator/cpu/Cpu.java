@@ -583,6 +583,16 @@ public class Cpu {
 						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
 				}
 				break;
+			case (byte) 0xF7: // GRP3b Ev
+				modRM.read();
+				switch (modRM.getRegIdx()) {
+					case 4: // MUL
+						mul(state.getAX(), modRM.getMem16());
+						break;
+					default: 
+						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
+				}
+				break;
 			case (byte) 0xFA: // CLI
 				state.setInterruptFlag(false);
 				break;
@@ -751,6 +761,20 @@ public class Cpu {
 		short result = sub16(v, 1);
 		state.setCarryFlag(oldCarry);
 		return result;
+	}
+	
+	private void mul(int v1, int v2) {
+		int result = (v1 & 0xffff) * (v2 & 0xffff);
+		state.setDX((short)(result >> 16));
+		state.setAX((short)result);
+
+		if (state.getDX() == 0) {
+			state.setOverflowFlag(false);
+			state.setCarryFlag(false);
+		} else {
+			state.setOverflowFlag(true);
+			state.setCarryFlag(true);
+		}
 	}
 	
 	private short shl16(int v, int count) {
