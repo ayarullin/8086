@@ -174,11 +174,20 @@ public class State {
 		return (byte) reg[AX_INDEX];
 	}
 	
+	public byte getAH() {
+		return (byte) (reg[AX_INDEX] >> 8);
+	}
+	
 	
 	
 	public void setAL(byte v) {
 		reg[AX_INDEX] &= 0xff00;
 		reg[AX_INDEX] |= v & 0xff;
+	}
+	
+	public void setAH(byte v) {
+		reg[AX_INDEX] &= 0x00ff;
+		reg[AX_INDEX] |= ((v & 0xff) << 8);
 	}
 	
 	

@@ -579,6 +579,9 @@ public class Cpu {
 					case 0: // TEST
 						and8(modRM.getMem8(), nextByte());
 						break;
+					case 4: // MUL
+						mul8(state.getAL(), modRM.getMem8());
+						break;
 					default:
 						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
 				}
@@ -587,7 +590,7 @@ public class Cpu {
 				modRM.read();
 				switch (modRM.getRegIdx()) {
 					case 4: // MUL
-						mul(state.getAX(), modRM.getMem16());
+						mul16(state.getAX(), modRM.getMem16());
 						break;
 					default: 
 						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
@@ -763,7 +766,22 @@ public class Cpu {
 		return result;
 	}
 	
-	private void mul(int v1, int v2) {
+	private void mul8(byte v1, byte v2) {
+		short result = (short)((v1 & 0xff) * (v2 & 0xff));
+		state.setAH((byte)(result >> 8));
+		state.setAL((byte)result);
+
+		// update flags
+		if (state.getAH() == 0) {
+			state.setOverflowFlag(false);
+			state.setCarryFlag(false);
+		} else {
+			state.setOverflowFlag(true);
+			state.setCarryFlag(true);
+		}
+	}
+	
+	private void mul16(int v1, int v2) {
 		int result = (v1 & 0xffff) * (v2 & 0xffff);
 		state.setDX((short)(result >> 16));
 		state.setAX((short)result);
