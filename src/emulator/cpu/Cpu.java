@@ -273,6 +273,33 @@ public class Cpu {
 			case (byte) 0x07: // POP ES
 				state.setES(pop());
 				break;
+			case (byte) 0x08: // OR Eb Gb
+				modRM.read();
+				modRM.setMem8(or8(modRM.getMem8(), modRM.getReg8()));
+				break;
+			case (byte) 0x09: // OR Ev Gv
+				modRM.read();
+				modRM.setMem16(or16(modRM.getMem16(), modRM.getReg16()));
+				break;
+			case (byte) 0x0A: // OR Gb Eb
+				modRM.read();
+				modRM.setReg8(or8(modRM.getReg8(), modRM.getMem8()));
+				break;
+			case (byte) 0x0B: // OR Gv Ev
+				modRM.read();
+				modRM.setReg16(or16(modRM.getReg16(), modRM.getMem16()));
+				break;
+			case (byte) 0x0C: // OR AL Ib
+				state.setAL(or8(state.getAL(), nextByte()));
+				break;
+			case (byte) 0x0D: // OR AX Iv
+				state.setAX(or16(state.getAX(), nextWord()));
+				break;
+			case (byte) 0x0E: // PUSH CS
+				push(state.getCS());
+				break;
+			case (byte) 0x0F: // Invalid
+				throw new InvalidOpcodeException(opcode);			
 			case (byte) 0x10: // ADC Eb Gb
 				modRM.read();
 				modRM.setMem8(adc8(modRM.getMem8(), modRM.getReg8()));
@@ -729,6 +756,24 @@ public class Cpu {
 	
 	private short adc16(int v1, int v2) {
 		return add16(v1, v2, true);
+	}
+	
+	private byte or8(byte v1, byte v2) {
+		short shortResult = (short) ((v1 & 0xff) | (v2 & 0xff));
+		byte byteResult = (byte) shortResult;
+		updateFlags8(shortResult);
+		state.setOverflowFlag(false);
+		state.setCarryFlag(false);
+		return byteResult;
+	}
+	
+	private short or16(int v1, int v2) {
+		int intResult = (v1 & 0xffff) & (v2 & 0xffff); 
+		short shortResult = (short) intResult;
+		updateFlags16(intResult);
+		state.setOverflowFlag(false);
+		state.setCarryFlag(false);
+		return shortResult;
 	}
 	
 	private byte sub8(byte v1, byte v2) {
