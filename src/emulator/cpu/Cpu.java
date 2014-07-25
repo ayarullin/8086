@@ -618,6 +618,9 @@ public class Cpu {
 			case (byte) 0xEA: // JMP Ap (far)
 				opJmpAp();
 				break;
+			case (byte) 0xEB: // JMP Jb
+				state.setIP(state.getIP() + nextByte() + 1);
+				break;
 			case (byte) 0xD1: // GRP2 Ev 1
 				modRM.read();
 				switch (modRM.getRegIdx()) {
