@@ -961,6 +961,11 @@ public class Cpu {
 	}
 	
 	private void interrupt(byte intNo) {
+		// TODO: temporary
+		if (intNo < 0) {
+			return;
+		}
+		
 		push(state.getFlags());
 		push(state.getCS());
 		push(state.getIP());
