@@ -602,6 +602,9 @@ public class Cpu {
 				state.setCS(pop());
 				state.setFlags(pop());
 				break;
+			case (byte) 0xE4: // IN AL Ib
+				state.setAL(inb(nextByte()));
+				break;
 			case (byte) 0xE6: // OUT Ib AL
 				outb(nextByte(), state.getAL());
 				break;
@@ -917,6 +920,11 @@ public class Cpu {
 	private void outb(short port, byte val) {
 		// TODO: DMA implementation
 		System.out.println(String.format("out 0x%X, 0x%X", port, val));
+	}
+	
+	private byte inb(short port) {
+		// TODO: implementation
+		return 0;
 	}
 	
 	private void interrupt(byte intNo) {
