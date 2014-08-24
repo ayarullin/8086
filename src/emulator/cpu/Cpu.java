@@ -624,10 +624,23 @@ public class Cpu {
 			case (byte) 0xEB: // JMP Jb
 				state.setIP(state.getIP() + nextByte() + 1);
 				break;
+			case (byte) 0xD0: // GRP2 Eb 1
+				modRM.read();
+				switch (modRM.getRegIdx()) {
+					case 2: // RCL
+						modRM.setMem8(rcl8(modRM.getMem8(), 1));
+						break;
+					case 4: // SHL
+						modRM.setMem8(shl8(modRM.getMem8(), 1));
+						break;
+					default:
+						throw new RuntimeException("Invalid regIdx: " + modRM.getRegIdx());
+				}
+				break;
 			case (byte) 0xD1: // GRP2 Ev 1
 				modRM.read();
 				switch (modRM.getRegIdx()) {
-					case 4:
+					case 4: // SHL
 						modRM.setMem16(shl16(modRM.getMem16(), 1));
 						break;
 					default:
@@ -894,6 +907,16 @@ public class Cpu {
 		}
 	}
 	
+	private byte shl8(byte v, int count) {
+		short val = (byte) (v & 0xff);
+		val <<= count;
+
+		state.setOverflowFlag(((val >> 7) & 0x1) != ((val >> 8) & 0x1));
+		updateFlags8(val);
+		
+		return (byte) val;
+	}
+	
 	private short shl16(int v, int count) {
 		v <<= count;
 		
@@ -903,6 +926,16 @@ public class Cpu {
 		state.setOverflowFlag(((v >> 16) & 0x1) != ((v >> 15) & 0x1));
 		
 		return (short) v;
+	}
+	
+	private byte rcl8(byte v, int count) {
+		int val = v & 0xFF | (state.getCarryFlag() ? 0x100 : 0);
+		val = (val<<count) | (val>>(9-count));
+
+		state.setOverflowFlag(((val >> 7) & 0x1) != ((val >> 8) & 0x1));
+		state.setCarryFlag((val & 0x100) == 0x100);
+		
+		return (byte) val;
 	}
 	
 	private void push(int value) {
