@@ -783,6 +783,7 @@ public class Cpu {
 		updateFlags8(shortResult);
 		state.setOverflowFlag(false);
 		state.setCarryFlag(false);
+		state.setAuxiliaryFlag(false); // TODO: ???
 		return byteResult;
 	}
 	
