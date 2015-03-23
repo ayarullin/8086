@@ -1,5 +1,7 @@
 package emulator;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -15,7 +17,8 @@ public class Emulator {
 		
 		try {
 			String biosFileName = "bios/rombios.bin";
-			InputStream fin = Emulator.class.getClassLoader().getResourceAsStream(biosFileName);
+			//InputStream fin = Emulator.class.getClassLoader().getResourceAsStream(biosFileName);
+            InputStream fin = new FileInputStream(new File(biosFileName));
 			byte[] buf = new byte[65536];
 	        int k = 0;
 	        while (k < buf.length) {
